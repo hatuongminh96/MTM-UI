@@ -92,7 +92,16 @@ export default class MusicAPI {
    * Get related media of a song given an id.
    */
   static getSongMedia = (id) => {
-    // TODO: Implement!
-    return null;
+	let url = BASE_URL + "/songs/" + id + "/media?n=4";
+	return axioms.get(url)
+		.then(function(response) {
+			let result = response.data.data;
+			let media = [];
+			result.forEach( (obj) => {
+				media.push(new MediaItem(obj.url, obj.caption, obj.thumbnail) ) });
+			return media })
+		.catch(function (error) {
+		        MusicAPI.handleError(error);
+		      });
   }
 }
