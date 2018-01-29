@@ -28,16 +28,31 @@ export default class MusicAPI {
    */
   static getChart = (date) => {
 
-    let requestUrl = BASE_URL + "/charts/" + date;
-
-    return axios.get(requestUrl)
+    let query = `SELECT DISTINCT ?position ?name ?id ?name1 
+    WHERE {
+      ?Chart a schema:MusicPlaylist;
+        schema:datePublished "${date}";
+        schema:track ?ListItem0.
+      ?ListItem0 a schema:ListItem;
+        schema:item ?Song;
+        schema:position ?position.
+      ?Song a schema:MusicRecording;
+        schema:name ?name;
+        schema:byArtist ?Artist;
+        billboard:id ?id.
+      ?Artist a schema:MusicGroup;
+        schema:name ?name1
+    }`;
+    let LRA_URL = "http://localhost:9000/api/lra/query?q=" + encodeURIComponent(query);
+    
+    return axios.get(LRA_URL)
       .then(function (res) {
 
-        let result = res.data.data;
+        let result = res.data.table.rows;
         let chart = [];
 
         result.forEach((chartItem) => {
-          chart.push(new ChartPosition(chartItem.rank, chartItem.songId, chartItem['song.name'], chartItem['song.artist']));
+          chart.push(new ChartPosition(chartItem['?position'], chartItem['?id'], chartItem['?name'], chartItem['?name1']));
         });
 
         return chart;
@@ -45,7 +60,7 @@ export default class MusicAPI {
       .catch(function (error) {
         MusicAPI.handleError(error);
       });
-  };
+};
 
   /**
    * Get song information given an id
