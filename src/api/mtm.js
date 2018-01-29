@@ -119,7 +119,6 @@ export default class MusicAPI {
     return axios.get(requestUrl)
       .then(function (res) {
         let result = res.data.table.rows;
-        console.log(result);
         let rankings = [];
 
         result.forEach((ranking) => {
@@ -137,16 +136,32 @@ export default class MusicAPI {
    * Get related media of a song given an id.
    */
   static getSongMedia = (id) => {
-	let url = BASE_URL + "/songs/" + id + "/media?n=4";
-	return axioms.get(url)
-		.then(function(response) {
-			let result = response.data.data;
-			let media = [];
-			result.forEach( (obj) => {
-				media.push(new MediaItem(obj.url, obj.caption, obj.thumbnail) ) });
-			return media })
-		.catch(function (error) {
-		        MusicAPI.handleError(error);
-		      });
+    // let requestUrl = BASE_URL + "/songs/" + id + "/media?n=4";
+    let query = `SELECT DISTINCT ?url ?thumbnail ?name 
+    WHERE {
+      ?Media a schema:MediaObject;
+        schema:url ?url;
+        schema:image ?thumbnail;
+        schema:name ?name.
+      ?MusicRecording a schema:MusicRecording;
+        schema:subjectOf ?Media;
+        billboard:id "${id}"
+    }`;
+    let requestUrl = "http://localhost:9000/api/lra/query?q=" + encodeURIComponent(query);
+    return axios.get(requestUrl)
+      .then(function (response) {
+        let result = response.data.table.rows;
+        let media = [];
+        console.log(result);
+        result.forEach((mediaObj) => {
+          media.push(new MediaItem(mediaObj['?url'], mediaObj['?name'],
+            mediaObj['?thumbnail']));
+        });
+
+        return media;
+      })
+      .catch(function (error) {
+        MusicAPI.handleError(error);
+      });
   }
 }
